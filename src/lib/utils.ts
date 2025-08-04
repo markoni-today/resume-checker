@@ -7,10 +7,10 @@ export function cn(...inputs: ClassValue[]) {
 
 // Утилиты для работы с файлами
 export const ALLOWED_FILE_TYPES = {
-  'text/plain': ['.txt'],
-  'application/pdf': ['.pdf'],
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-  'application/msword': ['.doc']
+  'text/plain': ['.txt']
+  // PDF и DOCX будут добавлены в следующих версиях
+  // 'application/pdf': ['.pdf'],
+  // 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx']
 }
 
 export const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
@@ -29,7 +29,7 @@ export function validateFile(file: File): { valid: boolean; error?: string } {
   if (!allowedTypes.includes(file.type)) {
     return {
       valid: false,
-      error: 'Неподдерживаемый формат файла. Разрешены: TXT, PDF, DOCX, DOC'
+      error: 'В данной версии поддерживаются только TXT файлы. PDF и DOCX будут добавлены в следующих версиях.'
     }
   }
 
