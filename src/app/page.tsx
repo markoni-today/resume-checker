@@ -11,7 +11,6 @@ import { ATSAnalysisResult } from '@/lib/utils'
 
 export default function HomePage() {
   const [resumeFile, setResumeFile] = useState<File | null>(null)
-  const [vacancyFile, setVacancyFile] = useState<File | null>(null)
   const [resumeText, setResumeText] = useState<string>('')
   const [vacancyText, setVacancyText] = useState<string>('')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
@@ -21,10 +20,10 @@ export default function HomePage() {
   const handleAnalyze = async () => {
     // Проверяем что есть данные для анализа
     const hasResumeData = resumeFile || resumeText.trim()
-    const hasVacancyData = vacancyFile || vacancyText.trim()
+    const hasVacancyData = vacancyText.trim()
     
     if (!hasResumeData || !hasVacancyData) {
-      setError('Пожалуйста, добавьте резюме и вакансию (файлом или текстом)')
+      setError('Пожалуйста, добавьте резюме (файлом или текстом) и описание вакансии')
       return
     }
 
@@ -54,11 +53,11 @@ export default function HomePage() {
 
         const result = await response.json()
         setAnalysisResult(result)
-      } else if (resumeFile && vacancyFile) {
-        // Анализ файлов
+      } else if (resumeFile && vacancyText.trim()) {
+        // Анализ файла резюме + текста вакансии
         const formData = new FormData()
         formData.append('resume', resumeFile)
-        formData.append('vacancy', vacancyFile)
+        formData.append('vacancyText', vacancyText.trim())
 
         const response = await fetch('/api/analyze', {
           method: 'POST',
@@ -73,7 +72,7 @@ export default function HomePage() {
         const result = await response.json()
         setAnalysisResult(result)
       } else {
-        throw new Error('Используйте либо файлы, либо текст для обоих полей')
+        throw new Error('Необходимо указать резюме (файлом или текстом) и вакансию (текстом)')
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Произошла ошибка при анализе')
@@ -82,7 +81,7 @@ export default function HomePage() {
     }
   }
 
-  const canAnalyze = (resumeFile || resumeText.trim()) && (vacancyFile || vacancyText.trim()) && !isAnalyzing
+  const canAnalyze = (resumeFile || resumeText.trim()) && vacancyText.trim() && !isAnalyzing
 
   return (
     <div className="min-h-screen bg-background">

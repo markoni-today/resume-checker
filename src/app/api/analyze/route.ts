@@ -27,28 +27,36 @@ export async function POST(request: NextRequest) {
       vacancyText = body.vacancyText.trim()
       
     } else {
-      // Обработка FormData (файлы)
+      // Обработка FormData (смешанный ввод: файл резюме + текст вакансии)
       const formData = await request.formData()
       const resumeFile = formData.get('resume') as File
-      const vacancyFile = formData.get('vacancy') as File
+      const vacancyTextFromForm = formData.get('vacancyText') as string
       
-      // Валидация файлов
-      if (!resumeFile || !vacancyFile) {
+      // Валидация: нужно либо файл резюме, либо текст резюме
+      if (!resumeFile) {
         return NextResponse.json(
-          { error: 'Необходимо загрузить оба файла' },
+          { error: 'Необходимо загрузить файл резюме' },
+          { status: 400 }
+        )
+      }
+
+      // Валидация: нужен текст вакансии
+      if (!vacancyTextFromForm || !vacancyTextFromForm.trim()) {
+        return NextResponse.json(
+          { error: 'Необходимо указать текст вакансии' },
           { status: 400 }
         )
       }
     
-      // Проверка размеров файлов
-      if (resumeFile.size > MAX_FILE_SIZE || vacancyFile.size > MAX_FILE_SIZE) {
+      // Проверка размера файла резюме
+      if (resumeFile.size > MAX_FILE_SIZE) {
         return NextResponse.json(
-          { error: `Файл слишком большой. Максимальный размер: ${MAX_FILE_SIZE / 1024 / 1024}MB` },
+          { error: `Файл резюме слишком большой. Максимальный размер: ${MAX_FILE_SIZE / 1024 / 1024}MB` },
           { status: 400 }
         )
       }
       
-      // Проверка типов файлов (поддерживаем TXT, PDF, DOC, DOCX)
+      // Проверка типа файла резюме (поддерживаем TXT, PDF, DOC, DOCX)
       const allowedTypes = [
         'text/plain',
         'application/pdf', 
@@ -61,27 +69,24 @@ export async function POST(request: NextRequest) {
       const isResumeValid = allowedTypes.includes(resumeFile.type) || 
         allowedExtensions.some(ext => resumeFile.name.toLowerCase().endsWith(ext))
       
-      const isVacancyValid = allowedTypes.includes(vacancyFile.type) || 
-        allowedExtensions.some(ext => vacancyFile.name.toLowerCase().endsWith(ext))
-      
-      if (!isResumeValid || !isVacancyValid) {
+      if (!isResumeValid) {
         return NextResponse.json(
-          { error: 'Поддерживаемые форматы файлов: TXT, PDF, DOC, DOCX' },
+          { error: 'Поддерживаемые форматы файлов резюме: TXT, PDF, DOC, DOCX' },
           { status: 400 }
         )
       }
       
-      // Парсинг файлов
+      // Парсинг файла резюме
       const parser = new UniversalFileParser()
       
       try {
         resumeText = await parser.parseFile(resumeFile)
-        vacancyText = await parser.parseFile(vacancyFile)
+        vacancyText = vacancyTextFromForm.trim()
         
       } catch (parseError) {
         console.error('File parsing error:', parseError)
         return NextResponse.json(
-          { error: parseError instanceof Error ? parseError.message : 'Ошибка при обработке файлов' },
+          { error: parseError instanceof Error ? parseError.message : 'Ошибка при обработке файла резюме' },
           { status: 400 }
         )
       }
