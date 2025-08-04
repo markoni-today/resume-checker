@@ -2,10 +2,6 @@
  * Парсер файлов для браузера с поддержкой PDF, DOC, DOCX, TXT
  */
 
-// Import types only, actual imports will be done dynamically
-type MammothResult = { value: string }
-type PdfParseResult = { text: string }
-
 export interface BrowserFileParser {
   parseFile(file: File): Promise<string>
 }
@@ -74,8 +70,8 @@ export class UniversalFileParser implements BrowserFileParser {
               return
             }
             
-            const buffer = new Uint8Array(arrayBuffer)
-            const data: PdfParseResult = await pdfParse(buffer)
+            const buffer = Buffer.from(arrayBuffer)
+            const data = await pdfParse(buffer) as { text: string }
             resolve(data.text || '')
           } catch (error) {
             reject(new Error(`Ошибка обработки PDF: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`))
@@ -103,7 +99,7 @@ export class UniversalFileParser implements BrowserFileParser {
               return
             }
             
-            const result: MammothResult = await mammoth.extractRawText({ arrayBuffer })
+            const result = await mammoth.extractRawText({ arrayBuffer })
             resolve(result.value || '')
           } catch (error) {
             reject(new Error(`Ошибка обработки Word документа: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`))
