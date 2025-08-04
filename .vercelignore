@@ -1,0 +1,26 @@
+# Python files (not needed for current version)
+python/
+*.py
+__pycache__/
+
+# Test files
+tests/
+*.test.ts
+*.test.tsx
+*.test.js
+
+# Development files
+.vscode/
+.idea/
+
+# Documentation
+README.md
+PROJECT_PLAN_V2.md
+DEPLOYMENT_TEST.md
+
+# Test files
+test-files/
+
+# Local environment
+.env.local
+.env.development.local
