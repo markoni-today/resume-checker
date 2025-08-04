@@ -11,13 +11,19 @@ import { ATSAnalysisResult } from '@/lib/utils'
 export default function HomePage() {
   const [resumeFile, setResumeFile] = useState<File | null>(null)
   const [vacancyFile, setVacancyFile] = useState<File | null>(null)
+  const [resumeText, setResumeText] = useState<string>('')
+  const [vacancyText, setVacancyText] = useState<string>('')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisResult, setAnalysisResult] = useState<ATSAnalysisResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const handleAnalyze = async () => {
-    if (!resumeFile || !vacancyFile) {
-      setError('Пожалуйста, загрузите оба файла')
+    // Проверяем что есть данные для анализа
+    const hasResumeData = resumeFile || resumeText.trim()
+    const hasVacancyData = vacancyFile || vacancyText.trim()
+    
+    if (!hasResumeData || !hasVacancyData) {
+      setError('Пожалуйста, добавьте резюме и вакансию (файлом или текстом)')
       return
     }
 
@@ -26,22 +32,48 @@ export default function HomePage() {
     setAnalysisResult(null)
 
     try {
-      const formData = new FormData()
-      formData.append('resume', resumeFile)
-      formData.append('vacancy', vacancyFile)
+      if (resumeText.trim() && vacancyText.trim()) {
+        // Анализ текста напрямую
+        const response = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            resumeText: resumeText.trim(),
+            vacancyText: vacancyText.trim(),
+            type: 'text'
+          }),
+        })
 
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        body: formData,
-      })
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Ошибка анализа')
+        }
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Ошибка анализа')
+        const result = await response.json()
+        setAnalysisResult(result)
+      } else if (resumeFile && vacancyFile) {
+        // Анализ файлов
+        const formData = new FormData()
+        formData.append('resume', resumeFile)
+        formData.append('vacancy', vacancyFile)
+
+        const response = await fetch('/api/analyze', {
+          method: 'POST',
+          body: formData,
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Ошибка анализа')
+        }
+
+        const result = await response.json()
+        setAnalysisResult(result)
+      } else {
+        throw new Error('Используйте либо файлы, либо текст для обоих полей')
       }
-
-      const result = await response.json()
-      setAnalysisResult(result)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Произошла ошибка при анализе')
     } finally {
@@ -49,7 +81,7 @@ export default function HomePage() {
     }
   }
 
-  const canAnalyze = resumeFile && vacancyFile && !isAnalyzing
+  const canAnalyze = (resumeFile || resumeText.trim()) && (vacancyFile || vacancyText.trim()) && !isAnalyzing
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-6xl">
@@ -63,7 +95,10 @@ export default function HomePage() {
           Проверьте совместимость вашего резюме с российскими ATS системами
         </p>
         <p className="text-sm text-muted-foreground mt-2">
-          Загрузите резюме и описание вакансии для получения детального анализа
+          Загрузите резюме и описание вакансии в формате TXT для получения детального анализа
+        </p>
+        <p className="text-xs text-muted-foreground mt-1 opacity-75">
+          PDF и DOCX форматы будут добавлены в следующих версиях
         </p>
       </div>
 
@@ -71,16 +106,20 @@ export default function HomePage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <FileUpload
           label="Резюме"
-          description="Загрузите ваше резюме в формате TXT, PDF, DOCX или DOC"
+          description="Загрузите файл резюме в формате TXT"
           onFileSelect={setResumeFile}
           selectedFile={resumeFile}
+          onTextInput={setResumeText}
+          textValue={resumeText}
         />
         
         <FileUpload
           label="Описание вакансии"
-          description="Загрузите текст вакансии или требования к кандидату"
+          description="Загрузите файл вакансии в формате TXT"
           onFileSelect={setVacancyFile}
           selectedFile={vacancyFile}
+          onTextInput={setVacancyText}
+          textValue={vacancyText}
         />
       </div>
 
@@ -107,10 +146,7 @@ export default function HomePage() {
         
         {!canAnalyze && !isAnalyzing && (
           <p className="text-sm text-muted-foreground mt-2">
-            {!resumeFile || !vacancyFile 
-              ? 'Загрузите оба файла для начала анализа'
-              : ''
-            }
+            Добавьте резюме и вакансию (файлом или текстом) для начала анализа
           </p>
         )}
       </div>
