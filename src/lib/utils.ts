@@ -7,10 +7,10 @@ export function cn(...inputs: ClassValue[]) {
 
 // Утилиты для работы с файлами
 export const ALLOWED_FILE_TYPES = {
-  'text/plain': ['.txt']
-  // PDF и DOCX будут добавлены в следующих версиях
-  // 'application/pdf': ['.pdf'],
-  // 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx']
+  'text/plain': ['.txt'],
+  'application/pdf': ['.pdf'],
+  'application/msword': ['.doc'],
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx']
 }
 
 export const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
@@ -26,10 +26,17 @@ export function validateFile(file: File): { valid: boolean; error?: string } {
 
   // Проверка типа файла
   const allowedTypes = Object.keys(ALLOWED_FILE_TYPES)
-  if (!allowedTypes.includes(file.type)) {
+  const allowedExtensions = ['.txt', '.pdf', '.doc', '.docx']
+  
+  const isValidType = allowedTypes.includes(file.type)
+  const isValidExtension = allowedExtensions.some(ext => 
+    file.name.toLowerCase().endsWith(ext)
+  )
+  
+  if (!isValidType && !isValidExtension) {
     return {
       valid: false,
-      error: 'В данной версии поддерживаются только TXT файлы. PDF и DOCX будут добавлены в следующих версиях.'
+      error: 'Поддерживаемые форматы файлов: TXT, PDF, DOC, DOCX'
     }
   }
 
