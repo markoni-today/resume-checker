@@ -13,6 +13,8 @@ interface FileUploadProps {
   onFileSelect: (file: File | null) => void
   selectedFile: File | null
   error?: string
+  onTextInput?: (text: string) => void
+  textValue?: string
 }
 
 export default function FileUpload({ 
@@ -20,7 +22,9 @@ export default function FileUpload({
   description, 
   onFileSelect, 
   selectedFile, 
-  error 
+  error,
+  onTextInput,
+  textValue
 }: FileUploadProps) {
   const [dragActive, setDragActive] = useState(false)
   const [validationError, setValidationError] = useState<string | null>(null)
@@ -150,9 +154,8 @@ export default function FileUpload({
 
               <div className="flex flex-wrap justify-center gap-2 text-xs text-muted-foreground">
                 <Badge variant="outline">TXT</Badge>
-                <Badge variant="outline">PDF</Badge>
-                <Badge variant="outline">DOCX</Badge>
-                <Badge variant="outline">DOC</Badge>
+                <Badge variant="outline" className="opacity-50">PDF (скоро)</Badge>
+                <Badge variant="outline" className="opacity-50">DOCX (скоро)</Badge>
               </div>
 
               <p className="text-xs text-muted-foreground">
@@ -162,7 +165,7 @@ export default function FileUpload({
               <input
                 type="file"
                 className="hidden"
-                accept=".txt,.pdf,.docx,.doc"
+                accept=".txt"
                 onChange={handleFileInput}
                 id={`file-input-${label.replace(/\s+/g, '-').toLowerCase()}`}
               />
@@ -181,6 +184,30 @@ export default function FileUpload({
           </CardContent>
         </Card>
       )}
+
+      {/* Альтернативный ввод текста */}
+      <div className="mt-4">
+        <p className="text-sm font-medium mb-2">Или вставьте текст напрямую:</p>
+        <textarea
+          className="w-full h-32 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          placeholder={`Вставьте текст ${label.toLowerCase()} сюда...`}
+          value={textValue || ''}
+          onChange={(e) => {
+            if (onTextInput) {
+              onTextInput(e.target.value)
+              // Если есть текст, убираем выбранный файл
+              if (e.target.value.trim() && selectedFile) {
+                onFileSelect(null)
+              }
+            }
+          }}
+        />
+        {textValue && textValue.trim() && (
+          <p className="text-xs text-green-600 mt-1">
+            ✓ Текст введен ({textValue.length} символов)
+          </p>
+        )}
+      </div>
     </div>
   )
 }
