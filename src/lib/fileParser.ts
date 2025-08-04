@@ -1,9 +1,16 @@
 /**
- * Парсер файлов для браузера (без Python зависимостей)
- * Упрощенная версия для Vercel deployment
+ * Парсер файлов для браузера с поддержкой PDF, DOC, DOCX, TXT
  */
 
-export class BrowserFileParser {
+// Import types only, actual imports will be done dynamically
+type MammothResult = { value: string }
+type PdfParseResult = { text: string }
+
+export interface BrowserFileParser {
+  parseFile(file: File): Promise<string>
+}
+
+export class UniversalFileParser implements BrowserFileParser {
   private maxFileSize = 5 * 1024 * 1024 // 5MB
 
   async parseFile(file: File): Promise<string> {
@@ -12,63 +19,102 @@ export class BrowserFileParser {
       throw new Error(`Файл слишком большой. Максимальный размер: ${this.maxFileSize / 1024 / 1024}MB`)
     }
 
-    const fileType = this.detectFileType(file)
+    const fileType = file.type.toLowerCase()
+    const fileName = file.name.toLowerCase()
     
-    switch (fileType) {
-      case 'txt':
-        return await this.parseTxt(file)
-      case 'pdf':
-        return await this.parsePdf(file)
-      case 'docx':
-        return await this.parseDocx(file)
-      default:
-        throw new Error(`Неподдерживаемый тип файла: ${file.type}`)
+    try {
+      // Text files
+      if (fileType.includes('text/plain') || fileName.endsWith('.txt')) {
+        return this.parseTextFile(file)
+      }
+      
+      // PDF files  
+      if (fileType.includes('pdf') || fileName.endsWith('.pdf')) {
+        return this.parsePdfFile(file)
+      }
+      
+      // Word documents
+      if (fileType.includes('msword') || 
+          fileType.includes('wordprocessingml') ||
+          fileName.endsWith('.doc') || 
+          fileName.endsWith('.docx')) {
+        return this.parseWordFile(file)
+      }
+      
+      throw new Error(`Неподдерживаемый тип файла: ${fileType}`)
+    } catch (error) {
+      console.error('Error parsing file:', error)
+      throw new Error(`Ошибка обработки файла: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
     }
   }
-
-  private detectFileType(file: File): string {
-    const supportedTypes: Record<string, string> = {
-      'text/plain': 'txt',
-      'application/pdf': 'pdf',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
-      'application/msword': 'doc'
-    }
-
-    if (supportedTypes[file.type]) {
-      return supportedTypes[file.type]
-    }
-
-    // Проверка по расширению файла
-    const extension = file.name.split('.').pop()?.toLowerCase()
-    const extensionMap: Record<string, string> = {
-      'txt': 'txt',
-      'pdf': 'pdf',
-      'docx': 'docx',
-      'doc': 'doc'
-    }
-
-    if (extension && extensionMap[extension]) {
-      return extensionMap[extension]
-    }
-
-    throw new Error(`Неподдерживаемый формат файла: ${file.name}`)
+  
+  private async parseTextFile(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const text = e.target?.result as string
+        resolve(text || '')
+      }
+      reader.onerror = () => reject(new Error('Ошибка чтения текстового файла'))
+      reader.readAsText(file)
+    })
   }
-
-  private async parseTxt(file: File): Promise<string> {
-    const text = await file.text()
-    return text
+  
+  private async parsePdfFile(file: File): Promise<string> {
+    try {
+      const pdfParse = (await import('pdf-parse')).default
+      
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = async (e) => {
+          try {
+            const arrayBuffer = e.target?.result as ArrayBuffer
+            if (!arrayBuffer) {
+              reject(new Error('Не удалось прочитать PDF файл'))
+              return
+            }
+            
+            const buffer = new Uint8Array(arrayBuffer)
+            const data: PdfParseResult = await pdfParse(buffer)
+            resolve(data.text || '')
+          } catch (error) {
+            reject(new Error(`Ошибка обработки PDF: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`))
+          }
+        }
+        reader.onerror = () => reject(new Error('Ошибка чтения PDF файла'))
+        reader.readAsArrayBuffer(file)
+      })
+    } catch (importError) {
+      throw new Error('PDF парсер недоступен. Попробуйте преобразовать файл в TXT формат.')
+    }
   }
-
-  private async parsePdf(file: File): Promise<string> {
-    // Для MVP возвращаем сообщение о необходимости конвертации
-    // В production можно использовать pdf-parse или PDF.js
-    throw new Error('PDF файлы пока не поддерживаются в браузерной версии. Пожалуйста, конвертируйте в TXT или DOCX.')
-  }
-
-  private async parseDocx(file: File): Promise<string> {
-    // Для MVP возвращаем сообщение о необходимости конвертации
-    // В production можно использовать mammoth.js или docx-preview
-    throw new Error('DOCX файлы пока не поддерживаются в браузерной версии. Пожалуйста, конвертируйте в TXT.')
+  
+  private async parseWordFile(file: File): Promise<string> {
+    try {
+      const mammoth = await import('mammoth')
+      
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = async (e) => {
+          try {
+            const arrayBuffer = e.target?.result as ArrayBuffer
+            if (!arrayBuffer) {
+              reject(new Error('Не удалось прочитать Word файл'))
+              return
+            }
+            
+            const result: MammothResult = await mammoth.extractRawText({ arrayBuffer })
+            resolve(result.value || '')
+          } catch (error) {
+            reject(new Error(`Ошибка обработки Word документа: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`))
+          }
+        }
+        reader.onerror = () => reject(new Error('Ошибка чтения Word файла'))
+        reader.readAsArrayBuffer(file)
+      })
+    } catch (importError) {
+      throw new Error('Word парсер недоступен. Попробуйте преобразовать файл в TXT формат.')
+    }
   }
 
   formatFileSize(bytes: number): string {
@@ -80,4 +126,9 @@ export class BrowserFileParser {
     
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
+}
+
+export const parseFile = async (file: File): Promise<string> => {
+  const parser = new UniversalFileParser()
+  return parser.parseFile(file)
 }

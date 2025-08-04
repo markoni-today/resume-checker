@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { SimpleATSAnalyzer } from '@/lib/analyzer'
-import { BrowserFileParser } from '@/lib/fileParser'
+import { UniversalFileParser } from '@/lib/fileParser'
 
 // Максимальный размер файла (5MB)
 const MAX_FILE_SIZE = 5 * 1024 * 1024
@@ -48,18 +48,31 @@ export async function POST(request: NextRequest) {
         )
       }
       
-      // Проверка типов файлов (пока поддерживаем только TXT для Vercel)
-      const allowedTypes = ['text/plain']
+      // Проверка типов файлов (поддерживаем TXT, PDF, DOC, DOCX)
+      const allowedTypes = [
+        'text/plain',
+        'application/pdf', 
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      ]
       
-      if (!allowedTypes.includes(resumeFile.type) || !allowedTypes.includes(vacancyFile.type)) {
+      const allowedExtensions = ['.txt', '.pdf', '.doc', '.docx']
+      
+      const isResumeValid = allowedTypes.includes(resumeFile.type) || 
+        allowedExtensions.some(ext => resumeFile.name.toLowerCase().endsWith(ext))
+      
+      const isVacancyValid = allowedTypes.includes(vacancyFile.type) || 
+        allowedExtensions.some(ext => vacancyFile.name.toLowerCase().endsWith(ext))
+      
+      if (!isResumeValid || !isVacancyValid) {
         return NextResponse.json(
-          { error: 'В данной версии поддерживаются только TXT файлы. PDF и DOCX будут добавлены в следующих версиях.' },
+          { error: 'Поддерживаемые форматы файлов: TXT, PDF, DOC, DOCX' },
           { status: 400 }
         )
       }
       
       // Парсинг файлов
-      const parser = new BrowserFileParser()
+      const parser = new UniversalFileParser()
       
       try {
         resumeText = await parser.parseFile(resumeFile)
@@ -118,7 +131,8 @@ export async function GET() {
   return NextResponse.json(
     { 
       message: 'Resume Checker API v1.0 (alpha)',
-      supportedFormats: ['text/plain'],
+      supportedFormats: ['text/plain', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+      supportedExtensions: ['.txt', '.pdf', '.doc', '.docx'],
       maxFileSize: '5MB',
       status: 'active'
     },

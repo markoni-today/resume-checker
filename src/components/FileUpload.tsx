@@ -15,6 +15,8 @@ interface FileUploadProps {
   error?: string
   onTextInput?: (text: string) => void
   textValue?: string
+  acceptedTypes?: string
+  showTextInput?: boolean
 }
 
 export default function FileUpload({ 
@@ -24,7 +26,9 @@ export default function FileUpload({
   selectedFile, 
   error,
   onTextInput,
-  textValue
+  textValue,
+  acceptedTypes = ".txt",
+  showTextInput = false
 }: FileUploadProps) {
   const [dragActive, setDragActive] = useState(false)
   const [validationError, setValidationError] = useState<string | null>(null)
@@ -153,9 +157,10 @@ export default function FileUpload({
               </div>
 
               <div className="flex flex-wrap justify-center gap-2 text-xs text-muted-foreground">
-                <Badge variant="outline">TXT</Badge>
-                <Badge variant="outline" className="opacity-50">PDF (скоро)</Badge>
-                <Badge variant="outline" className="opacity-50">DOCX (скоро)</Badge>
+                {acceptedTypes.includes('.pdf') && <Badge variant="outline">PDF</Badge>}
+                {acceptedTypes.includes('.doc') && <Badge variant="outline">DOC</Badge>}
+                {acceptedTypes.includes('.docx') && <Badge variant="outline">DOCX</Badge>}
+                {acceptedTypes.includes('.txt') && <Badge variant="outline">TXT</Badge>}
               </div>
 
               <p className="text-xs text-muted-foreground">
@@ -165,7 +170,7 @@ export default function FileUpload({
               <input
                 type="file"
                 className="hidden"
-                accept=".txt"
+                accept={acceptedTypes}
                 onChange={handleFileInput}
                 id={`file-input-${label.replace(/\s+/g, '-').toLowerCase()}`}
               />
@@ -186,28 +191,29 @@ export default function FileUpload({
       )}
 
       {/* Альтернативный ввод текста */}
-      <div className="mt-4">
-        <p className="text-sm font-medium mb-2">Или вставьте текст напрямую:</p>
-        <textarea
-          className="w-full h-32 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          placeholder={`Вставьте текст ${label.toLowerCase()} сюда...`}
-          value={textValue || ''}
-          onChange={(e) => {
-            if (onTextInput) {
-              onTextInput(e.target.value)
-              // Если есть текст, убираем выбранный файл
-              if (e.target.value.trim() && selectedFile) {
-                onFileSelect(null)
+      {showTextInput && (
+        <div className="mt-6 pt-6 border-t">
+          <p className="text-sm font-medium mb-3">Или вставьте текст напрямую:</p>
+          <textarea
+            className="w-full h-40 p-3 border rounded-md resize-none focus:ring-2 focus:ring-ring focus:border-input"
+            placeholder={`Вставьте текст резюме сюда...`}
+            value={textValue || ''}
+            onChange={(e) => {
+              if (onTextInput) {
+                onTextInput(e.target.value)
+                if (e.target.value.trim() && selectedFile) {
+                  onFileSelect(null)
+                }
               }
-            }
-          }}
-        />
-        {textValue && textValue.trim() && (
-          <p className="text-xs text-green-600 mt-1">
-            ✓ Текст введен ({textValue.length} символов)
-          </p>
-        )}
-      </div>
+            }}
+          />
+          {textValue && textValue.trim() && (
+            <p className="text-xs text-muted-foreground mt-2">
+              {textValue.length} символов
+            </p>
+          )}
+        </div>
+      )}
     </div>
   )
 }
