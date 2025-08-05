@@ -1,6 +1,9 @@
 /**
  * Серверный парсер файлов для Node.js окружения (без FileReader)
+ * Использует pdfjs-dist для PDF и mammoth для Word
  */
+
+import { parsePdfWithPdfjs, parseWordWithMammoth } from './pdfParser'
 
 export async function parseFileOnServer(file: File): Promise<string> {
   const fileType = file.type.toLowerCase()
@@ -16,59 +19,43 @@ export async function parseFileOnServer(file: File): Promise<string> {
       text = await file.text()
       console.log('TXT parsed successfully, length:', text.length)
     }
-    // PDF files - экспериментальная поддержка
+    // PDF files - используем pdfjs-dist для лучшей совместимости
     else if (fileType.includes('pdf') || fileName.endsWith('.pdf')) {
-      console.log('Attempting PDF parsing...')
+      console.log('Attempting PDF parsing with pdfjs-dist...')
       try {
-        // Проверка доступности pdf-parse
-        const pdfParse = (await import('pdf-parse')).default
-        if (!pdfParse) {
-          throw new Error('pdf-parse module not available')
-        }
-        
         const arrayBuffer = await file.arrayBuffer()
         console.log('PDF arrayBuffer size:', arrayBuffer.byteLength)
         
-        const buffer = Buffer.from(arrayBuffer)
-        console.log('PDF buffer created, size:', buffer.length)
-        
-        const data = await pdfParse(buffer)
-        text = data.text || ''
-        console.log('PDF parsed successfully, text length:', text.length)
+        text = await parsePdfWithPdfjs(arrayBuffer)
+        console.log('PDF parsed successfully with pdfjs, text length:', text.length)
         
         if (!text.trim()) {
           throw new Error('Пустой текст из PDF')
         }
       } catch (pdfError) {
         console.error('PDF parsing failed:', pdfError)
-        throw new Error(`PDF парсинг не работает на данном сервере. Пожалуйста, скопируйте текст из PDF и вставьте в текстовое поле резюме.`)
+        throw new Error(`Ошибка обработки PDF: ${pdfError instanceof Error ? pdfError.message : 'Неизвестная ошибка'}`)
       }
     }
-    // Word documents - экспериментальная поддержка
+    // Word documents - используем mammoth с оптимизациями
     else if (fileType.includes('msword') || 
              fileType.includes('wordprocessingml') ||
              fileName.endsWith('.doc') || 
              fileName.endsWith('.docx')) {
-      console.log('Attempting Word parsing...')
+      console.log('Attempting Word parsing with mammoth...')
       try {
-        const mammoth = await import('mammoth')
-        if (!mammoth) {
-          throw new Error('mammoth module not available')
-        }
-        
         const arrayBuffer = await file.arrayBuffer()
         console.log('Word arrayBuffer size:', arrayBuffer.byteLength)
         
-        const result = await mammoth.extractRawText({ arrayBuffer })
-        text = result.value || ''
-        console.log('Word parsed successfully, text length:', text.length)
+        text = await parseWordWithMammoth(arrayBuffer)
+        console.log('Word parsed successfully with mammoth, text length:', text.length)
         
         if (!text.trim()) {
           throw new Error('Пустой текст из Word')
         }
       } catch (wordError) {
         console.error('Word parsing failed:', wordError)
-        throw new Error(`Word парсинг не работает на данном сервере. Пожалуйста, скопируйте текст из документа и вставьте в текстовое поле резюме.`)
+        throw new Error(`Ошибка обработки Word: ${wordError instanceof Error ? wordError.message : 'Неизвестная ошибка'}`)
       }
     }
     else {

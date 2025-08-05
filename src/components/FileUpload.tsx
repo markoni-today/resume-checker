@@ -157,17 +157,11 @@ export default function FileUpload({
               </div>
 
               <div className="flex flex-wrap justify-center gap-2 text-xs text-muted-foreground">
-                {acceptedTypes.includes('.txt') && <Badge variant="outline">TXT (стабильно)</Badge>}
-                {acceptedTypes.includes('.pdf') && <Badge variant="outline" className="opacity-70">PDF (бета)</Badge>}
-                {acceptedTypes.includes('.doc') && <Badge variant="outline" className="opacity-70">DOC (бета)</Badge>}
-                {acceptedTypes.includes('.docx') && <Badge variant="outline" className="opacity-70">DOCX (бета)</Badge>}
+                {acceptedTypes.includes('.txt') && <Badge variant="outline">TXT</Badge>}
+                {acceptedTypes.includes('.pdf') && <Badge variant="outline">PDF</Badge>}
+                {acceptedTypes.includes('.doc') && <Badge variant="outline">DOC</Badge>}
+                {acceptedTypes.includes('.docx') && <Badge variant="outline">DOCX</Badge>}
               </div>
-              
-              {(acceptedTypes.includes('.pdf') || acceptedTypes.includes('.doc') || acceptedTypes.includes('.docx')) && (
-                <p className="text-xs text-amber-600 mt-2 text-center">
-                  ⚠️ PDF/DOC/DOCX поддержка экспериментальная. Рекомендуем TXT для стабильной работы.
-                </p>
-              )}
 
               <p className="text-xs text-muted-foreground">
                 Максимальный размер: 5MB

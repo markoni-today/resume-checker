@@ -36,15 +36,8 @@ export function validateFile(file: File): { valid: boolean; error?: string } {
   if (!isValidType && !isValidExtension) {
     return {
       valid: false,
-      error: 'Поддерживаемые форматы: TXT (стабильно), PDF/DOC/DOCX (экспериментально)'
+      error: 'Поддерживаемые форматы файлов: TXT, PDF, DOC, DOCX'
     }
-  }
-  
-  // Предупреждение для PDF/DOC
-  if (file.type.includes('pdf') || file.name.toLowerCase().endsWith('.pdf') ||
-      file.type.includes('msword') || file.type.includes('wordprocessingml') ||
-      file.name.toLowerCase().endsWith('.doc') || file.name.toLowerCase().endsWith('.docx')) {
-    // Пока пропускаем - пользователь увидит ошибку при обработке
   }
 
   return { valid: true }
