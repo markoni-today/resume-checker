@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { SimpleATSAnalyzer } from '@/lib/analyzer'
-import { UniversalFileParser } from '@/lib/fileParser'
+import { parseFileOnServer } from '@/lib/serverFileParser'
 
 // Максимальный размер файла (5MB)
 const MAX_FILE_SIZE = 5 * 1024 * 1024
@@ -76,11 +76,9 @@ export async function POST(request: NextRequest) {
         )
       }
       
-      // Парсинг файла резюме
-      const parser = new UniversalFileParser()
-      
+      // Парсинг файла резюме на сервере
       try {
-        resumeText = await parser.parseFile(resumeFile)
+        resumeText = await parseFileOnServer(resumeFile)
         vacancyText = vacancyTextFromForm.trim()
         
       } catch (parseError) {
