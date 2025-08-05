@@ -36,7 +36,16 @@ export function validateFile(file: File): { valid: boolean; error?: string } {
   if (!isValidType && !isValidExtension) {
     return {
       valid: false,
-      error: 'Поддерживаемые форматы файлов: TXT, PDF, DOC, DOCX'
+      error: 'Поддерживаемые форматы: TXT (надежно), PDF/DOCX (базово), DOC (не поддерживается)'
+    }
+  }
+  
+  // Предупреждение для проблемных форматов
+  const fileName = file.name.toLowerCase()
+  if (file.type.includes('msword') || fileName.endsWith('.doc')) {
+    return {
+      valid: false,
+      error: 'DOC файлы не поддерживаются. Пожалуйста, сохраните в DOCX или скопируйте текст.'
     }
   }
 

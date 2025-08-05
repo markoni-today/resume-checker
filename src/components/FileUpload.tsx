@@ -157,10 +157,17 @@ export default function FileUpload({
               </div>
 
               <div className="flex flex-wrap justify-center gap-2 text-xs text-muted-foreground">
-                {acceptedTypes.includes('.txt') && <Badge variant="outline">TXT</Badge>}
-                {acceptedTypes.includes('.pdf') && <Badge variant="outline">PDF</Badge>}
-                {acceptedTypes.includes('.doc') && <Badge variant="outline">DOC</Badge>}
-                {acceptedTypes.includes('.docx') && <Badge variant="outline">DOCX</Badge>}
+                {acceptedTypes.includes('.txt') && <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700">TXT ✓</Badge>}
+                {acceptedTypes.includes('.pdf') && <Badge variant="outline" className="bg-amber-50 border-amber-200 text-amber-700">PDF ⚠️</Badge>}
+                {acceptedTypes.includes('.docx') && <Badge variant="outline" className="bg-amber-50 border-amber-200 text-amber-700">DOCX ⚠️</Badge>}
+                {acceptedTypes.includes('.doc') && <Badge variant="outline" className="bg-red-50 border-red-200 text-red-700">DOC ❌</Badge>}
+              </div>
+              
+              <div className="text-xs text-center mt-2 space-y-1">
+                <p className="text-green-600">✓ TXT - полная поддержка</p>
+                <p className="text-amber-600">⚠️ PDF/DOCX - базовое извлечение текста</p>
+                <p className="text-red-600">❌ DOC - не поддерживается</p>
+                <p className="text-blue-600 font-medium">Рекомендация: используйте текстовое поле для надежности</p>
               </div>
 
               <p className="text-xs text-muted-foreground">
