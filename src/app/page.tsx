@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import FileUpload from '@/components/FileUpload'
 import AnalysisReport from '@/components/AnalysisReport'
 import { ATSAnalysisResult } from '@/lib/utils'
+import { parseFileOnClient } from '@/lib/clientFileParser'
 
 export default function HomePage() {
   const [resumeFile, setResumeFile] = useState<File | null>(null)
@@ -54,14 +55,28 @@ export default function HomePage() {
         const result = await response.json()
         setAnalysisResult(result)
       } else if (resumeFile && vacancyText.trim()) {
-        // Анализ файла резюме + текста вакансии
-        const formData = new FormData()
-        formData.append('resume', resumeFile)
-        formData.append('vacancyText', vacancyText.trim())
-
+        // Парсим файл на клиенте, затем отправляем текст
+        let parsedResumeText: string
+        
+        try {
+          setError('Обрабатываем файл...')
+          parsedResumeText = await parseFileOnClient(resumeFile)
+          setError(null)
+        } catch (parseError) {
+          throw new Error(parseError instanceof Error ? parseError.message : 'Ошибка обработки файла')
+        }
+        
+        // Отправляем уже извлеченный текст
         const response = await fetch('/api/analyze', {
           method: 'POST',
-          body: formData,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            resumeText: parsedResumeText.trim(),
+            vacancyText: vacancyText.trim(),
+            type: 'text'
+          }),
         })
 
         if (!response.ok) {

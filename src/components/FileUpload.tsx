@@ -163,11 +163,13 @@ export default function FileUpload({
                 {acceptedTypes.includes('.doc') && <Badge variant="outline" className="bg-red-50 border-red-200 text-red-700">DOC ❌</Badge>}
               </div>
               
-              <div className="text-xs text-center mt-2 space-y-1">
-                <p className="text-green-600">✓ TXT - полная поддержка</p>
-                <p className="text-amber-600">⚠️ PDF/DOCX - базовое извлечение текста</p>
+              <div className="text-xs text-center mt-3 space-y-1 bg-slate-50 p-3 rounded">
+                <p className="text-green-600 font-medium">✓ TXT - полная поддержка</p>
+                <p className="text-blue-600">✓ PDF/DOCX - обработка в браузере</p>
                 <p className="text-red-600">❌ DOC - не поддерживается</p>
-                <p className="text-blue-600 font-medium">Рекомендация: используйте текстовое поле для надежности</p>
+                <p className="text-gray-600 text-xs mt-2">
+                  💡 Файлы обрабатываются локально в вашем браузере
+                </p>
               </div>
 
               <p className="text-xs text-muted-foreground">
